@@ -1,21 +1,18 @@
 from datetime import datetime
 from os import path
 
-import pretty_midi
+import py_midicsv
 
 
 class MidiParser:
     def __init__(self, folder: str):
         self.folder: str = folder
 
-    def readMusic(self, file: str):
+    def read_music(self, file: str):
         file_path = path.join(self.folder, file)
-        # We'll load in the example.mid file distributed with pretty_midi
-        pm = pretty_midi.PrettyMIDI(file_path)
 
-        piano_roll = pm.get_piano_roll(fs=1)
+        csv = py_midicsv.midi_to_csv(file_path)
 
-        for i in piano_roll:
-            print(i)
+        print(csv)
 
-        return
+        return csv

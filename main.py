@@ -3,5 +3,7 @@ import numpy as np
 
 if __name__ == '__main__':
     parser = MidiParser('midi/')
-    piano_roll = parser.readMusic('sonatas_k-010_(c)sankey.mid')
+    csv = parser.read_music('sonatas_k-001_(c)sankey.mid')
 
+    with open("test.csv", "w") as text_file:
+        text_file.write(str.join('', csv))
