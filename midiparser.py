@@ -1,8 +1,8 @@
 from os import path
+import pathlib
 import csv
-import py_midicsv
+import py_midicsv as pm
 import re
-
 
 class MidiParser:
     TIME_CONSTANT = 10
@@ -17,7 +17,7 @@ class MidiParser:
 
     def read_music(self, file: str):
         file_path = path.join(self.folder, file)
-        csv_rows = py_midicsv.midi_to_csv(file_path)
+        csv_rows = pm.midi_to_csv(file_path)
 
         encoded = ''
         time_prev = 0
@@ -40,12 +40,16 @@ class MidiParser:
 
         return encoded
 
-    def decode_notwise(self, encoded: str):
+    def save_music(self, encoded: str, filename: str):
         words = encoded.split(' ')
 
         csv_rows = []
 
-        m_track, m_channel, m_time = 1, 0, 0
+        csv_rows.append(['0', '0', 'Header', '0', '1', '384'])
+        csv_rows.append(['1', '0', 'Start_track'])
+        csv_rows.append(['1', '0', 'Tempo', '500000'])
+
+        m_track, m_channel, m_time = '1', '0', 0
         for word in words:
             wait = re.match(r'wait([0-9]*)', word)
             if wait:
@@ -54,10 +58,20 @@ class MidiParser:
             note = re.match(r'(?P<end>end)?p(?P<note>[0-9]*)', word)
             if note:
                 m_type = 'Note_off_c' if note.group('end') else 'Note_on_c'
-                m_note = int(note.group('note'))
-                m_velocity = 127
-                csv_rows.append([m_track, m_time, m_type, m_channel, m_note, m_velocity])
+                m_note = note.group('note')
+                m_velocity = '127'
+                csv_rows.append([m_track, str(m_time), m_type, m_channel, m_note, m_velocity])
 
-        return csv_rows
+        csv_rows.append(['1', str(m_time + 5000), 'End_track'])
+        csv_rows.append(['0', '0', 'End_of_file'])
 
+        csv_rows = [str.join(', ', row) for row in csv_rows]
+        midi_object = pm.csv_to_midi(csv_rows)
 
+        folder = path.join(self.folder, 'output/')
+        pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
+
+        filepath = path.join(folder, filename)
+        with open(filepath, 'wb') as file:
+            midi_writer = pm.FileWriter(file)
+            midi_writer.write(midi_object)
