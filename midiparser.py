@@ -1,5 +1,5 @@
 from os import path
-
+import csv
 import py_midicsv
 
 TIME_CONSTANT = 10
@@ -17,13 +17,11 @@ class MidiParser:
 
     def read_music(self, file: str):
         file_path = path.join(self.folder, file)
-        csv = py_midicsv.midi_to_csv(file_path)
-
-        csv_rows_split = [row.split(', ') for row in csv]
+        csv_string = py_midicsv.midi_to_csv(file_path)
 
         encoded = ''
         time_prev = 0
-        for row in csv_rows_split:
+        for row in csv.reader(csv_string, delimiter=',', skipinitialspace=True):
             m_track, m_time, m_type = row[0], int(row[1]), row[2]
 
             wait_t = (m_time - time_prev) // TIME_CONSTANT
