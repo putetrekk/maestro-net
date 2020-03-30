@@ -1,8 +1,16 @@
+import time
 from os import path
 import pathlib
 import csv
 import py_midicsv as pm
 import re
+
+
+def generate_filename(num_sonatas_trained: int, char_per_sonata: int):
+    ts = round(time.time())
+    filename = f'result_{num_sonatas_trained}_{char_per_sonata}_{ts}.midi'
+    return filename
+
 
 class MidiParser:
     TIME_CONSTANT = 10
