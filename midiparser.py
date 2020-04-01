@@ -8,7 +8,7 @@ import re
 
 def generate_filename(num_sonatas_trained: int, char_per_sonata: int):
     ts = round(time.time())
-    filename = f'result_{num_sonatas_trained}_{char_per_sonata}_{ts}.midi'
+    filename = f'result_{num_sonatas_trained}_{char_per_sonata}_{ts}.mid'
     return filename
 
 
