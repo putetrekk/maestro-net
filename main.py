@@ -1,22 +1,22 @@
 import note_parser
-from midiparser import MidiParser, generate_filename
+from midiparser import MidiParser
 from model_generator import generate_model
-from note_preprocessor import prepare_notes
 
 if __name__ == '__main__':
     midi_folder = 'midi/'
-    num_sonatas_train = 20
-    characters_per_sonata = 300
     result_length_characters = 200
+    dataset_size = 1000
+    sequence_length = 5
 
     parser = MidiParser(midi_folder)
-    notes = prepare_notes(parser, midi_folder, num_sonatas_train, characters_per_sonata)
-    model, max_sequence_len = generate_model(notes)
+    notes = parser.prepare_notes(dataset_size)
+
+    model = generate_model(notes, sequence_length)
 
     #  Initial Note(s)
     initial_wait_note = "wait4"
-    result = note_parser.generate_text(model, initial_wait_note, result_length_characters, max_sequence_len)
+    result = note_parser.generate_text(model, initial_wait_note, result_length_characters, sequence_length, n=2)
 
-    filename = generate_filename(num_sonatas_train, characters_per_sonata)
+    filename = f'generated_{dataset_size}.mid'
     print(result)
     parser.save_music(result, filename)

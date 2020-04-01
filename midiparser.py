@@ -1,15 +1,16 @@
-import time
-from os import path
+import os
+import datetime
 import pathlib
 import csv
 import py_midicsv as pm
 import re
+import numpy as np
 
 
-def generate_filename(num_sonatas_trained: int, char_per_sonata: int):
-    ts = round(time.time())
-    filename = f'result_{num_sonatas_trained}_{char_per_sonata}_{ts}.midi'
-    return filename
+def add_timestamp_to_filename(filename: str):
+    now = datetime.datetime.now()
+    timestamp = now.strftime('%Y%m%d_%H%M%S')
+    return timestamp + '_' + filename
 
 
 class MidiParser:
@@ -19,12 +20,33 @@ class MidiParser:
     def __init__(self, folder: str):
         self.folder: str = folder
 
+    def prepare_notes(self, size: int):
+        files = [f for f in os.listdir(self.folder) if f.endswith('.mid')]
+        np.random.shuffle(files)
+
+        data = []
+
+        word_count = 0
+        for file in files:
+            if word_count >= size:
+                break
+
+            words = self.read_music(file).split(' ')[1:]
+            if word_count + len(words) > size:
+                words = words[0: size - word_count - len(words)]
+            word_count += len(words)
+            words = ' '.join(words)
+
+            data.append(words)
+
+        return data
+
     def time_to_waits(self, time_t):
         waits = [self.MAX_WAIT] * (time_t // self.MAX_WAIT) + [time_t % self.MAX_WAIT]
         return str.join(' ', ['wait' + str(w) for w in waits if w > 0])
 
     def read_music(self, file: str):
-        file_path = path.join(self.folder, file)
+        file_path = os.path.join(self.folder, file)
         csv_rows = pm.midi_to_csv(file_path)
 
         encoded = ''
@@ -76,10 +98,10 @@ class MidiParser:
         csv_rows = [str.join(', ', row) for row in csv_rows]
         midi_object = pm.csv_to_midi(csv_rows)
 
-        folder = path.join(self.folder, 'output/')
+        folder = os.path.join(self.folder, 'output/')
         pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
 
-        filepath = path.join(folder, filename)
+        filepath = os.path.join(folder, add_timestamp_to_filename(filename))
         with open(filepath, 'wb') as file:
             midi_writer = pm.FileWriter(file)
             midi_writer.write(midi_object)
