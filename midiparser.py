@@ -1,3 +1,4 @@
+from typing import Dict, List
 import os
 import datetime
 import pathlib
@@ -20,7 +21,7 @@ class MidiParser:
     def __init__(self, folder: str):
         self.folder: str = folder
 
-    def prepare_notes(self, size: int):
+    def get_data(self, size: int) -> List[str]:
         files = [f for f in os.listdir(self.folder) if f.endswith('.mid')]
         np.random.shuffle(files)
 
@@ -45,7 +46,7 @@ class MidiParser:
         waits = [self.MAX_WAIT] * (time_t // self.MAX_WAIT) + [time_t % self.MAX_WAIT]
         return str.join(' ', ['wait' + str(w) for w in waits if w > 0])
 
-    def read_music(self, file: str):
+    def read_music(self, file: str) -> str:
         file_path = os.path.join(self.folder, file)
         csv_rows = pm.midi_to_csv(file_path)
 
@@ -70,7 +71,7 @@ class MidiParser:
 
         return encoded
 
-    def save_music(self, encoded: str, filename: str):
+    def save_music(self, encoded: str, filename: str) -> None:
         words = encoded.split(' ')
 
         csv_rows = []
@@ -105,3 +106,12 @@ class MidiParser:
         with open(filepath, 'wb') as file:
             midi_writer = pm.FileWriter(file)
             midi_writer.write(midi_object)
+
+    @staticmethod
+    def vocabulary() -> Dict[str, int]:
+        waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
+        ps = ['p' + str(i) for i in range(88)]
+        endps = ['endp' + str(i) for i in range(88)]
+
+        vocabulary = waits + ps + endps
+        return {vocabulary[i]: i for i in range(len(vocabulary))}
