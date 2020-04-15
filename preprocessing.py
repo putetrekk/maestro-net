@@ -14,7 +14,7 @@ def create_tokenizer():
 
 def create_sequences(data: list, sequence_length=100):
 	tokenizer = create_tokenizer()
-	total_words = len(tokenizer.word_index)
+	total_words = len(tokenizer.word_index) + 1
 
 	# create input sequences using list of tokens
 	sequences = []

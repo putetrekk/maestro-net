@@ -40,7 +40,21 @@ class MidiParser:
 
             data.append(words)
 
+        if not self.__validate_data(data):
+            exit()
+
         return data
+
+    def __validate_data(self, data: List[str]) -> bool:
+        vocab = self.vocabulary()
+        success = True
+        for d in data:
+            words = d.split(' ')
+            for word in words:
+                if word not in vocab:
+                    success = False
+                    print(f'Stumbled upon a word that\'s not in the vocabulary: {word}')
+        return success
 
     def time_to_waits(self, time_t):
         waits = [self.MAX_WAIT] * (time_t // self.MAX_WAIT) + [time_t % self.MAX_WAIT]
@@ -110,8 +124,8 @@ class MidiParser:
     @staticmethod
     def vocabulary() -> Dict[str, int]:
         waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
-        ps = ['p' + str(i) for i in range(88)]
-        endps = ['endp' + str(i) for i in range(88)]
+        ps = ['p' + str(i) for i in range(92)]
+        endps = ['endp' + str(i) for i in range(92)]
 
         vocabulary = waits + ps + endps
         return {vocabulary[i]: i for i in range(len(vocabulary))}

@@ -20,11 +20,12 @@ if __name__ == '__main__':
     data = parser.get_data(dataset_size)
     train_x, train_y = create_sequences(data, sequence_length)
 
-    model = LSTMModel(sequence_length, len(create_tokenizer().word_index))
+    model = LSTMModel(sequence_length, len(parser.vocabulary()) + 1)
 
     # model.load_weights('weights.h5')
 
     recorded_stats = []
+    record_metrics = ['loss', 'accuracy', 'val_loss', 'val_accuracy']
     for batch in range(epochs // epoch_batch_size):
         # train
         epoch_start = batch * epoch_batch_size
@@ -38,7 +39,8 @@ if __name__ == '__main__':
             validation_split=0.2)
 
         # Record metrics
-        metrics = [list(range(epoch_start, epoch_end))] + list(history.history.values())  # [epoch, loss, accuracy, ...]
+        metrics = history.history
+        metrics = [list(range(epoch_start, epoch_end))] + [metrics[key] for key in metrics if key in record_metrics]
         recorded_stats += zip(*metrics)
 
         # generate a small sample every batch
@@ -52,7 +54,7 @@ if __name__ == '__main__':
         filename = f'history_{model.Name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}'
         with open(filename, 'w', newline="\n") as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
-            headers = ['epoch'] + model.metrics_names
+            headers = ['epoch'] + record_metrics
             writer.writerow(headers)
             for line in recorded_stats:
                 writer.writerow(line)
