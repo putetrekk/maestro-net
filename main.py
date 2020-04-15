@@ -1,6 +1,7 @@
 from music_generator import gen_music
 from preprocessing import create_sequences, create_tokenizer
 from midiparser import MidiParser
+from keras.callbacks import EarlyStopping
 import csv, datetime
 
 from models import *
@@ -28,7 +29,13 @@ if __name__ == '__main__':
         # train
         epoch_start = batch * epoch_batch_size
         epoch_end = epoch_start + epoch_batch_size
-        history = model.fit(train_x, train_y, verbose=1, initial_epoch=epoch_start, epochs=epoch_end)
+        history = model.fit(
+            train_x,
+            train_y,
+            verbose=1,
+            initial_epoch=epoch_start,
+            epochs=epoch_end,
+            validation_split=0.2)
 
         # Record metrics
         metrics = [list(range(epoch_start, epoch_end))] + list(history.history.values())  # [epoch, loss, accuracy, ...]
@@ -52,4 +59,4 @@ if __name__ == '__main__':
 
     # generate some sample music! :D
     music = gen_music(model, result_length_characters, n=2)
-    parser.save_music(music, f'generated_length{result_length_characters}')
+    parser.save_music(music, f'generated_length{result_length_characters}.mid')

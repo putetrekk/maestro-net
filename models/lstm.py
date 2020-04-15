@@ -11,8 +11,7 @@ class LSTMModel(Sequential):
         self.add(Embedding(input_dim=total_words, output_dim=10, input_length=sequence_length))
         self.add(LSTM(150, return_sequences=True))
         self.add(Dropout(0.2))
-        self.add(LSTM(100, return_sequences=True))
-        self.add(SimpleRNN(100))
+        self.add(LSTM(100))
         self.add(Dense(total_words, activation='softmax'))
 
         self.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
