@@ -1,10 +1,12 @@
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Input, Permute, Lambda, Multiply
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Input, Permute, Lambda, Multiply, Attention
 from tensorflow.keras.layers import TimeDistributed, Flatten, Activation, RepeatVector
 from tensorflow.keras.backend import sum
 from tensorflow.keras.models import Model
 
 
 class AttentionModel(Model):
+    Name = 'Attention Model v1'
+
     def __init__(self, sequence_length, total_words, *args, **kwargs):
         input_layer = Input(shape=[sequence_length], dtype='int32')
 

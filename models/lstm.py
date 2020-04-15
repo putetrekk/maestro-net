@@ -3,6 +3,8 @@ from tensorflow.keras.models import Sequential
 
 
 class LSTMModel(Sequential):
+    Name = 'LSTM'
+
     def __init__(self, sequence_length, total_words):
         super().__init__()
 
