@@ -33,3 +33,5 @@ class AttentionModel(Model):
 
         super().__init__(inputs=input_layer, outputs=probabilities, *args, **kwargs)
         self.compile(optimizer='adam', loss='categorical_crossentropy', metrics=["accuracy"])
+
+        print(self.summary())

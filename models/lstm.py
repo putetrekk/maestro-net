@@ -1,18 +1,17 @@
 from tensorflow.keras.layers import SimpleRNN, Embedding, LSTM, Dense, Dropout
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Sequential
 
 
-class LSTMModel(Model):
-    def __init__(self, total_words, sequence_length):
-        super(LSTMModel, self).__init__()
+class LSTMModel(Sequential):
+    def __init__(self, sequence_length, total_words):
+        super().__init__()
 
-        model = self
-        model.add(Embedding(total_words, 10, input_length=sequence_length))  # , input_length=max_sequence_len-1))
-        model.add(LSTM(150, return_sequences=True))
-        model.add(Dropout(0.2))
-        model.add(LSTM(100, return_sequences=True))
-        model.add(SimpleRNN(100))
-        model.add(Dense(total_words, activation='softmax'))
+        self.add(Embedding(input_dim=total_words, output_dim=10, input_length=sequence_length))
+        self.add(LSTM(150, return_sequences=True))
+        self.add(Dropout(0.2))
+        self.add(LSTM(100, return_sequences=True))
+        self.add(SimpleRNN(100))
+        self.add(Dense(total_words, activation='softmax'))
 
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        print(model.summary())
+        self.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        print(self.summary())

@@ -17,7 +17,7 @@ if __name__ == '__main__':
     data = parser.get_data(dataset_size)
     train_x, train_y = create_sequences(data, sequence_length)
 
-    model = AttentionModel(sequence_length, len(create_tokenizer().word_index))
+    model = LSTMModel(sequence_length, len(create_tokenizer().word_index))
 
     # model.load_weights('weights.h5')
 
