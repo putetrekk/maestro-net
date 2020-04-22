@@ -7,6 +7,8 @@ import py_midicsv as pm
 import re
 import numpy as np
 
+from transposer import scarlatti_get_offset
+
 
 def add_timestamp_to_filename(filename: str):
     now = datetime.datetime.now()
@@ -60,9 +62,13 @@ class MidiParser:
         waits = [self.MAX_WAIT] * (time_t // self.MAX_WAIT) + [time_t % self.MAX_WAIT]
         return str.join(' ', ['wait' + str(w) for w in waits if w > 0])
 
-    def read_music(self, file: str) -> str:
+    def read_music(self, file: str, normalize: bool = True) -> str:
         file_path = os.path.join(self.folder, file)
         csv_rows = pm.midi_to_csv(file_path)
+
+        note_offset = 0
+        if normalize:
+            note_offset = scarlatti_get_offset(filename=file)
 
         encoded = ''
         time_prev = 0
@@ -74,6 +80,7 @@ class MidiParser:
 
             if m_type == 'Note_on_c' or m_type == 'Note_off_c':
                 channel, note, velocity = row[3], row[4], row[5]
+                note = str(int(note) + note_offset)
 
                 if wait_t != 0:
                     encoded += ' ' + self.time_to_waits(wait_t)
@@ -124,8 +131,8 @@ class MidiParser:
     @staticmethod
     def vocabulary() -> Dict[str, int]:
         waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
-        ps = ['p' + str(i) for i in range(92)]
-        endps = ['endp' + str(i) for i in range(92)]
+        ps = ['p' + str(i) for i in range(98)]
+        endps = ['endp' + str(i) for i in range(98)]
 
         vocabulary = waits + ps + endps
         return {vocabulary[i]: i for i in range(len(vocabulary))}
