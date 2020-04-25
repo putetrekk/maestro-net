@@ -2,3 +2,4 @@
 venv
 midi/*.mid
 midi/output
+output
