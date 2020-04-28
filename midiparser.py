@@ -17,7 +17,7 @@ class MidiParser:
         self.output_dir: str = output_dir
 
     def get_data(self, size: int) -> List[str]:
-        files = [f for f in os.listdir(self.midi_dir) if f.endswith('.mid')]
+        files = [f for f in os.listdir(self.midi_dir) if f.endswith(('.mid', '.MID', '.midi', '.MIDI'))]
         np.random.shuffle(files)
 
         data = []

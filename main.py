@@ -3,7 +3,6 @@ from maestroutil import *
 from music_generator import gen_music
 from preprocessing import create_sequences, create_tokenizer
 from midiparser import MidiParser
-from keras.callbacks import EarlyStopping
 import csv, datetime
 
 from models import *
@@ -12,6 +11,11 @@ from models import *
 def save_weights(model, output_dir:str):
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     model.save_weights(output_dir + f'weights_s{sequence_length}_d{dataset_size}_e{epochs}_b{batch}_model_{model.Name}.h5')
+
+
+def load_data(filename: str):
+    with open(filename, 'r') as file:
+        return file.read().split('\n')
 
 
 if __name__ == '__main__':
@@ -26,8 +30,9 @@ if __name__ == '__main__':
     save_history = True
 
     parser = MidiParser(midi_dir, output_dir)
-    data = parser.get_data(dataset_size)
-    train_x, train_y = create_sequences(data, sequence_length)
+    # data = parser.get_data(dataset_size)  # load from midi files
+    data = load_data('data/scarlatti_k1_555.txt')  # load from preparsed music
+    train_x, train_y, validation_x, validation_y = create_sequences(data, sequence_length)
 
     model = LSTMModel(sequence_length, len(parser.vocabulary()) + 1)
 
@@ -42,10 +47,10 @@ if __name__ == '__main__':
         history = model.fit(
             train_x,
             train_y,
+            validation_data=(validation_x, validation_y),
             verbose=1,
             initial_epoch=epoch_start,
-            epochs=epoch_end,
-            validation_split=0.2)
+            epochs=epoch_end)
 
         # Save weights
         save_weights(model, output_dir)

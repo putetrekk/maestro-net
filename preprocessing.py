@@ -12,7 +12,7 @@ def create_tokenizer():
 	return tokenizer
 
 
-def create_sequences(data: list, sequence_length=100):
+def create_sequences(data: list, sequence_length=100, validation_split: float = 0.2):
 	tokenizer = create_tokenizer()
 	total_words = len(tokenizer.word_index) + 1
 
@@ -21,7 +21,7 @@ def create_sequences(data: list, sequence_length=100):
 	for line in data:
 		token_list = tokenizer.texts_to_sequences([line])[0]
 		for i in range(sequence_length, len(token_list)):
-			n_gram_sequence = token_list[:i+1]
+			n_gram_sequence = token_list[i - sequence_length:i + 1]
 			sequences.append(n_gram_sequence)
 
 	# pad sequences
@@ -31,7 +31,12 @@ def create_sequences(data: list, sequence_length=100):
 	predictors, label = sequences[:, :-1], sequences[:, -1]
 	label = ku.to_categorical(label, num_classes=total_words)
 
-	return predictors, label
+	v_num = int(len(predictors) * validation_split)
+
+	train_x, train_y = predictors[v_num:], label[v_num:]
+	validation_x, validation_y = predictors[0:v_num], label[0:v_num]
+
+	return train_x, train_y, validation_x, validation_y
 
 def split_input_output(all_data: list, words_per_section = 25):
 	inputs, outputs = [], []
