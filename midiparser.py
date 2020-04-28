@@ -1,30 +1,23 @@
 from typing import Dict, List
 import os
-import datetime
 import pathlib
 import csv
 import py_midicsv as pm
 import re
 import numpy as np
-
+from maestroutil import *
 from transposer import scarlatti_get_offset
-
-
-def add_timestamp_to_filename(filename: str):
-    now = datetime.datetime.now()
-    timestamp = now.strftime('%Y%m%d_%H%M%S')
-    return timestamp + '_' + filename
-
 
 class MidiParser:
     TIME_CONSTANT = 10
     MAX_WAIT = 10
 
-    def __init__(self, folder: str):
-        self.folder: str = folder
+    def __init__(self, midi_dir: str, output_dir: str):
+        self.midi_dir: str = midi_dir
+        self.output_dir: str = output_dir
 
     def get_data(self, size: int) -> List[str]:
-        files = [f for f in os.listdir(self.folder) if f.endswith('.mid')]
+        files = [f for f in os.listdir(self.midi_dir) if f.endswith('.mid')]
         np.random.shuffle(files)
 
         data = []
@@ -63,7 +56,7 @@ class MidiParser:
         return str.join(' ', ['wait' + str(w) for w in waits if w > 0])
 
     def read_music(self, file: str, normalize: bool = True) -> str:
-        file_path = os.path.join(self.folder, file)
+        file_path = os.path.join(self.midi_dir, file)
         csv_rows = pm.midi_to_csv(file_path)
 
         note_offset = 0
@@ -120,10 +113,9 @@ class MidiParser:
         csv_rows = [str.join(', ', row) for row in csv_rows]
         midi_object = pm.csv_to_midi(csv_rows)
 
-        folder = os.path.join(self.folder, 'output/')
-        pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
-        filepath = os.path.join(folder, add_timestamp_to_filename(filename))
+        filepath = os.path.join(self.output_dir, prefix_timestamp(filename))
         with open(filepath, 'wb') as file:
             midi_writer = pm.FileWriter(file)
             midi_writer.write(midi_object)

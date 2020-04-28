@@ -32,3 +32,20 @@ def create_sequences(data: list, sequence_length=100):
 	label = ku.to_categorical(label, num_classes=total_words)
 
 	return predictors, label
+
+def split_input_output(all_data: list, words_per_section = 25):
+	inputs, outputs = [], []
+	for data in all_data:
+		sep = ' '
+		sectioned_notes = []
+
+		groups = data.split(sep)
+		while len(groups):
+			sectioned_notes.append(sep.join(groups[:words_per_section]))
+			groups = groups[words_per_section:]
+
+		for i in range(len(sectioned_notes) - 1):
+			inputs.append(sectioned_notes[i])
+			outputs.append(sectioned_notes[i + 1])
+
+	return inputs, outputs

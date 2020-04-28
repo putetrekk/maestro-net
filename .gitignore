@@ -2,3 +2,8 @@
 venv
 midi/*.mid
 midi/output
+output
+*.MID
+*.mid
+*.h5
+*.pyc
