@@ -1,5 +1,6 @@
 import re
 
+import numpy
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -122,7 +123,6 @@ def get_dataset_as_tenor_slices(tokenized_inputs, tokenized_outputs):
 	dataset = dataset.shuffle(BUFFER_SIZE)
 	dataset = dataset.batch(BATCH_SIZE)
 	dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
-
 	return dataset
 
 def transformer(vocab_size,
@@ -179,14 +179,29 @@ def transformer(vocab_size,
 def get_eval_function(tokenizer, model, start_token, end_token, max_length):
 	def evaluate(sentence):
 		sentence = tf.expand_dims(start_token + tokenizer.encode(sentence) + end_token, axis=0)
-
+		print("Sentence")
 		output = tf.expand_dims(start_token, 0)
 		for i in range(max_length):
 			predictions = model(inputs=[sentence, output], training=False)
 
+
 			# select the last word from the seq_len dimension
 			predictions = predictions[:, -1:, :]
-			predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
+			best_k = tf.math.top_k(predictions, k=3, sorted=False)
+			# print(best_k)
+			# print(f'best_k={best_k}')
+			# print(f'best_k[0]={best_k[0]}')
+			# print(f'best_k[1]={best_k[1]}')
+			# print(f'best_k[1][0][0]={best_k[1][0][0]}')
+			indexes = best_k[1][0][0]
+			values = best_k[0][0][0]
+			values = [v.numpy() for v in values]
+
+			max_prob = sum(values)
+			probabilities = [v/max_prob for v in values]
+			choice = numpy.random.choice(indexes, p=probabilities)
+
+			predicted_id = tf.cast([[choice]], tf.int32)
 
 
 			# concatenated the predicted_id to the output which is given to the decoder
@@ -207,3 +222,12 @@ def get_predict_function(tokenizer, evaluate):
 
 		return cleaned_predicted_sentence
 	return predict
+
+
+def split_test_train(x, y, validation_split=0.1):
+	v_num = int(len(x) * validation_split)
+
+	train_x, train_y = x[v_num:], y[v_num:]
+	validation_x, validation_y = x[0:v_num], y[0:v_num]
+
+	return train_x, train_y, validation_x, validation_y

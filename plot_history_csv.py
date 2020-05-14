@@ -3,11 +3,12 @@ import ast
 import matplotlib.pyplot as plt
 import csv
 
-file = 'history_LSTM_20200415_233015.csv'
+file = 'output/20200429_120753/sizeinf_epoch50of_50_batch24'
 
-title = 'LSTM trained on 20_000 samples'
-# columns = ['loss', 'val_loss']
-columns = ['accuracy', 'val_accuracy']
+title = 'Transformer'
+
+columns = ['loss', 'val_loss']
+# columns = ['accuracy', 'val_accuracy']
 
 with open(file, newline='\n') as csv_file:
     data = list(csv.reader(csv_file, delimiter=','))
