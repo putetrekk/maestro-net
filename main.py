@@ -35,7 +35,7 @@ if __name__ == '__main__':
     data = load_data('data/scarlatti_k1_555.txt', dataset_songs)  # load from preparsed text-file
     train_x, train_y, validation_x, validation_y = create_sequences(data, sequence_length)
 
-    model = BiDirectionalLSTMModel(sequence_length, len(parser.vocabulary()) + 1)
+    model = TFAttentionModel(sequence_length, len(parser.vocabulary()) + 1)
 
     # model.load_weights('output/20200425_144518/weights_s100_d10000_e5_b0_model_LSTM.h5')
 
