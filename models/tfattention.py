@@ -1,7 +1,6 @@
 from tensorflow.keras.layers import Embedding, LSTM, Dense, Input, Attention
 from tensorflow.keras.models import Model
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 
 class BahdanauAttention(tf.keras.layers.Layer):
