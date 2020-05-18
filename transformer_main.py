@@ -3,8 +3,9 @@ import datetime
 
 from main import load_data
 from midiparser import MidiParser, prefix_timestamp
-from preprocessing import split_input_output
-from transformer.utils import get_tokenizer, get_eval_function, get_predict_function, transformer, split_test_train
+from preprocessing import split_input_output, create_tokenizer, create_sequences
+from transformer.utils import get_tokenizer, get_eval_function, get_predict_function, transformer, split_test_train, \
+	get_custom_tokenizer
 from transformer.utils import get_tokenized_data
 from transformer.utils import CustomSchedule
 from transformer.utils import get_accuracy_and_loss_functions
@@ -12,11 +13,13 @@ from transformer.utils import get_dataset_as_tenor_slices
 import tensorflow as tf
 
 if __name__ == '__main__':
-	output_dir = 'output/' + prefix_timestamp('/')
+	tf.keras.backend.clear_session()
+	output_dir = 'output/transformer/' + prefix_timestamp('/')
 	train_data_folder = 'midi/scarlatti/train'
 	validation_data_folder = 'midi/scarlatti/validation'
 	dataset_size = float('inf')
 	save_history = True
+	dataset_songs = 200  # when loading from preparsed text-file, the number of songs to take
 	EPOCHS = 500
 	EPOCHS_BATCH_SIZE = 5
 	# Hyper-parameters
@@ -26,29 +29,25 @@ if __name__ == '__main__':
 	NUM_HEADS = 16
 	UNITS = 512
 	DROPOUT = 0.3
-	WORDS_PER_SECTION = 20                      # The notes in a sentence
+	WORDS_PER_SECTION = 10                      # The notes in a sentence
 	MAX_LENGTH = 80                             # Biggest notes: wait10,
 
 	parser = MidiParser(train_data_folder, output_dir)
 	validation_parser = MidiParser(validation_data_folder, output_dir)
-	data = load_data('data/scarlatti_k1_555.txt')  # load from preparsed music
-	tran_data = data[:100]
-	validation_data = data[100:105]
+	data = load_data('data/scarlatti_k1_555.txt', dataset_songs)  # load from preparsed music
 
 	train_size = len(data)
 
 	inputs, outputs = split_input_output(data, WORDS_PER_SECTION)
+
 	#validation_inputs, validation_outputs = split_input_output(validation_data, WORDS_PER_SECTION)
 	tokenizer, start_token, end_token, vocab_size = get_tokenizer(inputs, outputs)
+	#tokenizer, start_token, end_token, vocab_size = get_custom_tokenizer()
 	tokenized_inputs, tokenized_outputs = get_tokenized_data(inputs, outputs, tokenizer, start_token, end_token, MAX_LENGTH)
+	train_x, train_y, valid_x, valid_y = split_test_train(tokenized_inputs, tokenized_outputs, 0.1)
 
-	train_x, train_y, valid_x, valid_y = split_test_train(tokenized_inputs, tokenized_outputs)
 	dataset = get_dataset_as_tenor_slices(train_x, train_y)
 	validation_dataset = get_dataset_as_tenor_slices(valid_x, valid_y)
-
-	print(f'Input length: {len(inputs)}')
-	print(f'dataset: {dataset}')
-	#tokenized_validation_inputs, tokenized_validation_outputs = get_tokenized_data(validation_inputs, validation_outputs, tokenizer, start_token, end_token, MAX_LENGTH
 
 	model = transformer(
 		vocab_size=vocab_size,
@@ -63,11 +62,12 @@ if __name__ == '__main__':
 	optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 	# Curried functions
 	accuracy, loss = get_accuracy_and_loss_functions(MAX_LENGTH)
+
 	evaluate_function = get_eval_function(tokenizer, model, start_token, end_token, MAX_LENGTH)
 	predict = get_predict_function(tokenizer, evaluate_function)
 
 	model.compile(optimizer=optimizer, loss=loss, metrics=[accuracy])
-	#model.load_weights("output/20200428_221931/sizeinf_epoch50of_50_batch24.h5")
+	# model.load_weights("output/20200515_125820/sizeinf_epoch25of_500_batch4.h5")
 	recorded_stats = []
 	record_metrics = ['loss', 'accuracy', 'val_loss', 'val_accuracy']
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 		notes = initial_notes
 		music = initial_notes
 		for _ in range(10):
-			notes = predict(notes)
+			notes = predict(music)
 			music += notes + ' '
 
 		print("Saving music...")

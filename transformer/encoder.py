@@ -1,17 +1,19 @@
 import tensorflow as tf
 
 def encoder_layer(units, d_model, num_heads, dropout, name="encoder_layer"):
+	print("---------------------------------------")
+	print("Encoder Layer")
 	inputs = tf.keras.Input(shape=(None, d_model), name="inputs")
 	padding_mask = tf.keras.Input(shape=(1, 1, None), name="padding_mask")
-
+	print(f'inputs = {inputs}')
 	from transformer.multiHeadAttention import MultiHeadAttention
-	attention = MultiHeadAttention(
-		d_model, num_heads, name="attention")({
+	attention = MultiHeadAttention(d_model, num_heads, name="attention")({
 		'query': inputs,
 		'key': inputs,
 		'value': inputs,
 		'mask': padding_mask
 	})
+	print(f'attention = {attention}')
 	attention = tf.keras.layers.Dropout(rate=dropout)(attention)
 	attention = tf.keras.layers.LayerNormalization(
 		epsilon=1e-6)(inputs + attention)
@@ -22,8 +24,7 @@ def encoder_layer(units, d_model, num_heads, dropout, name="encoder_layer"):
 	outputs = tf.keras.layers.LayerNormalization(
 		epsilon=1e-6)(attention + outputs)
 
-	return tf.keras.Model(
-		inputs=[inputs, padding_mask], outputs=outputs, name=name)
+	return tf.keras.Model(inputs=[inputs, padding_mask], outputs=outputs, name=name)
 
 
 def encoder(vocab_size,
@@ -35,6 +36,7 @@ def encoder(vocab_size,
             name="encoder"):
 	inputs = tf.keras.Input(shape=(None,), name="inputs")
 	padding_mask = tf.keras.Input(shape=(1, 1, None), name="padding_mask")
+	print(f'padding_mask = {padding_mask}')
 
 	embeddings = tf.keras.layers.Embedding(vocab_size, d_model)(inputs)
 	embeddings *= tf.math.sqrt(tf.cast(d_model, tf.float32))

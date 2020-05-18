@@ -4,6 +4,8 @@ import numpy
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
+from transformer.TransformerTokenizer import TransformerTokenizer
+
 def scaled_dot_product_attention(query, key, value, mask):
 	"""Calculate the attention weights. """
 	matmul_qk = tf.matmul(query, key, transpose_b=True)
@@ -84,24 +86,31 @@ def get_tokenizer(inputs, outputs):
 
 	return tokenizer, start_token, end_token, vocab_size
 
+def get_custom_tokenizer():
+	tokenizer = TransformerTokenizer()
+	start_token = tokenizer.start_token
+	end_token = tokenizer.end_token
+	vocab_size = tokenizer.vocab_size + 2
+
+	return tokenizer, start_token, end_token, vocab_size
+
 
 def get_tokenized_data(inputs, outputs, tokenizer, start_token, end_token, max_length):
 	tokenized_inputs, tokenized_outputs = [], []
-	MAX_LENGTH = 80
 	for (sentence1, sentence2) in zip(inputs, outputs):
-
+		# print(f'start_token = {start_token} +| {tokenizer.encode(sentence1)} |+ end_token = {end_token}')
 		sentence1 = start_token + tokenizer.encode(sentence1) + end_token
 		sentence2 = start_token + tokenizer.encode(sentence2) + end_token
 		# check tokenized sentence max length
-		if len(sentence1) <= MAX_LENGTH and len(sentence2) <= max_length:
+		if len(sentence1) <= max_length and len(sentence2) <= max_length:
 			tokenized_inputs.append(sentence1)
 			tokenized_outputs.append(sentence2)
 
 	# pad tokenized sentences
 	tokenized_inputs = tf.keras.preprocessing.sequence.pad_sequences(
-		tokenized_inputs, maxlen=MAX_LENGTH, padding='post')
+		tokenized_inputs, maxlen=max_length, padding='post')
 	tokenized_outputs = tf.keras.preprocessing.sequence.pad_sequences(
-		tokenized_outputs, maxlen=MAX_LENGTH, padding='post')
+		tokenized_outputs, maxlen=max_length, padding='post')
 
 	return tokenized_inputs, tokenized_outputs
 
@@ -176,12 +185,18 @@ def transformer(vocab_size,
 
 	return tf.keras.Model(inputs=[inputs, dec_inputs], outputs=outputs, name=name)
 
+
 def get_eval_function(tokenizer, model, start_token, end_token, max_length):
 	def evaluate(sentence):
+		# print("Sentence")
+		# print(f'Encoded Sentence: {tokenizer.encode(sentence)}')
 		sentence = tf.expand_dims(start_token + tokenizer.encode(sentence) + end_token, axis=0)
-		print("Sentence")
+
 		output = tf.expand_dims(start_token, 0)
+
+		outputs = []
 		for i in range(max_length):
+			#print(f'---------- generating word {i}')
 			predictions = model(inputs=[sentence, output], training=False)
 
 
@@ -199,16 +214,11 @@ def get_eval_function(tokenizer, model, start_token, end_token, max_length):
 
 			max_prob = sum(values)
 			probabilities = [v/max_prob for v in values]
-			choice = numpy.random.choice(indexes, p=probabilities)
+			predicted_id = numpy.random.choice(indexes, p=probabilities)
 
-			predicted_id = tf.cast([[choice]], tf.int32)
+			outputs.append(predicted_id)
 
-
-			# concatenated the predicted_id to the output which is given to the decoder
-			# as its input.
-			output = tf.concat([output, predicted_id], axis=-1)
-
-		return tf.squeeze(output, axis=0)
+		return outputs
 
 	return evaluate
 
@@ -216,11 +226,9 @@ def get_predict_function(tokenizer, evaluate):
 	def predict(sentence):
 		prediction = evaluate(sentence)
 		predicted_sentence = tokenizer.decode([i for i in prediction if i < tokenizer.vocab_size])
-		cleaned_predicted_sentence = re.sub(r'([0-9])([pwe])', r'\1 \2', predicted_sentence)
-		# print('Input: {}'.format(sentence))
-		# print('Output: {}'.format(cleaned_predicted_sentence))
+		# cleaned_predicted_sentence = re.sub(r'([0-9])([pwe])', r'\1 \2', predicted_sentence)
 
-		return cleaned_predicted_sentence
+		return predicted_sentence
 	return predict
 
 
