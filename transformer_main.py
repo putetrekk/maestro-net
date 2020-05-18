@@ -29,7 +29,7 @@ if __name__ == '__main__':
 	NUM_HEADS = 16
 	UNITS = 512
 	DROPOUT = 0.3
-	WORDS_PER_SECTION = 10                      # The notes in a sentence
+	WORDS_PER_SECTION = 20                      # The notes in a sentence
 	MAX_LENGTH = 80                             # Biggest notes: wait10,
 
 	parser = MidiParser(train_data_folder, output_dir)
@@ -39,10 +39,10 @@ if __name__ == '__main__':
 	train_size = len(data)
 
 	inputs, outputs = split_input_output(data, WORDS_PER_SECTION)
-
+	print(f'input len: {len(inputs)}, output len: {len(outputs)}')
 	#validation_inputs, validation_outputs = split_input_output(validation_data, WORDS_PER_SECTION)
-	tokenizer, start_token, end_token, vocab_size = get_tokenizer(inputs, outputs)
-	#tokenizer, start_token, end_token, vocab_size = get_custom_tokenizer()
+	#tokenizer, start_token, end_token, vocab_size = get_tokenizer(inputs, outputs)
+	tokenizer, start_token, end_token, vocab_size = get_custom_tokenizer()
 	tokenized_inputs, tokenized_outputs = get_tokenized_data(inputs, outputs, tokenizer, start_token, end_token, MAX_LENGTH)
 	train_x, train_y, valid_x, valid_y = split_test_train(tokenized_inputs, tokenized_outputs, 0.1)
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 		notes = initial_notes
 		music = initial_notes
 		for _ in range(10):
-			notes = predict(music)
+			notes = predict(notes)
 			music += notes + ' '
 
 		print("Saving music...")
@@ -106,18 +106,3 @@ if __name__ == '__main__':
 				writer.writerow(headers)
 				for line in recorded_stats:
 					writer.writerow(line)
-
-
-
-
-
-
-	# history = model.fit(dataset, validation_data=validation_dataset, epochs=EPOCHS, verbose=1)
-	# metrics = history.history
-	# print(metrics)
-	# # model.load_weights(f'weights_transformer_epochs{EPOCHS}_words_per_s{WORDS_PER_SECTION}.h5')
-	# model.save_weights(f'weights/transformer/t_epochs{EPOCHS}_words_per_s{WORDS_PER_SECTION}.h5')
-	# # Curried functions
-	#
-	#
-	# parser.save_music(total_output, f'transform_result.mid')
