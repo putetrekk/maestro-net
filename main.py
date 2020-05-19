@@ -18,6 +18,17 @@ def load_data(filename: str, take_num: int = 1000):
         return file.read().split('\n')[0:take_num]
 
 
+def save_history_to_file():
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
+    filename = f'history_{model.Name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+    with open(output_dir + filename, 'w', newline="\n") as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        headers = ['epoch'] + record_metrics
+        writer.writerow(headers)
+        for line in recorded_stats:
+            writer.writerow(line)
+
+
 if __name__ == '__main__':
     midi_dir = 'midi/'
     output_dir = 'output/' + prefix_timestamp('/')
@@ -67,14 +78,7 @@ if __name__ == '__main__':
 
     # save metrics history as csv
     if save_history:
-        pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
-        filename = f'history_{model.Name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-        with open(output_dir + filename, 'w', newline="\n") as csv_file:
-            writer = csv.writer(csv_file, delimiter=',')
-            headers = ['epoch'] + record_metrics
-            writer.writerow(headers)
-            for line in recorded_stats:
-                writer.writerow(line)
+        save_history_to_file()
 
     # generate some sample music! :D
     music = gen_music(model, result_length_characters, n=3)
