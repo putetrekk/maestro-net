@@ -9,8 +9,8 @@ from maestroutil import *
 from transposer import scarlatti_get_offset
 
 class MidiParser:
-    TIME_CONSTANT = 10
-    MAX_WAIT = 10
+    TIME_CONSTANT = 1
+    MAX_WAIT = 50
 
     def __init__(self, midi_dir: str, output_dir: str):
         self.midi_dir: str = midi_dir
@@ -27,7 +27,7 @@ class MidiParser:
             if word_count >= size:
                 break
 
-            words = self.read_music(file).split(' ')[1:]
+            words = self.read_music(file, normalize=False).split(' ')[1:]
             if word_count + len(words) > size:
                 words = words[0: size - word_count - len(words)]
             word_count += len(words)
@@ -55,9 +55,11 @@ class MidiParser:
         waits = [self.MAX_WAIT] * (time_t // self.MAX_WAIT) + [time_t % self.MAX_WAIT]
         return str.join(' ', ['wait' + str(w) for w in waits if w > 0])
 
-    def read_music(self, file: str, normalize: bool = True) -> str:
+    def read_music(self, file: str, normalize: bool = False) -> str:
         file_path = os.path.join(self.midi_dir, file)
         csv_rows = pm.midi_to_csv(file_path)
+        csv_rows = list(csv.reader(csv_rows, delimiter=',', skipinitialspace=True))
+        csv_rows = self.normalize_tempo(csv_rows)
 
         note_offset = 0
         if normalize:
@@ -65,7 +67,7 @@ class MidiParser:
 
         encoded = ''
         time_prev = 0
-        for row in csv.reader(csv_rows, delimiter=',', skipinitialspace=True):
+        for row in csv_rows:
             m_track, m_time, m_type = row[0], int(row[1]), row[2]
 
             wait_t = round((m_time - time_prev) / self.TIME_CONSTANT)
@@ -78,10 +80,10 @@ class MidiParser:
                 if wait_t != 0:
                     encoded += ' ' + self.time_to_waits(wait_t)
 
-                if m_type == 'Note_on_c':
-                    encoded += ' p' + note
-                elif m_type == 'Note_off_c':
+                if m_type == 'Note_off_c' or (m_type == 'Note_on_c' and velocity == '0'):
                     encoded += ' endp' + note
+                elif m_type == 'Note_on_c':
+                    encoded += ' p' + note
 
         return encoded
 
@@ -123,8 +125,50 @@ class MidiParser:
     @staticmethod
     def vocabulary() -> Dict[str, int]:
         waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
-        ps = ['p' + str(i) for i in range(98)]
-        endps = ['endp' + str(i) for i in range(98)]
+        ps = ['p' + str(i) for i in range(109)]
+        endps = ['endp' + str(i) for i in range(109)]
 
         vocabulary = waits + ps + endps
         return {vocabulary[i]: i for i in range(len(vocabulary))}
+
+    @staticmethod
+    def normalize_tempo(csv_rows):
+        tempo_changes = {}  # time: tempo
+
+        for row in csv_rows:
+            m_track, m_time, m_type = row[0], int(row[1]), row[2]
+            if m_type == 'Tempo':
+                tempo = int(row[3])
+                tempo_changes[m_time] = tempo
+
+        tempo_changes = {k: v for k, v in sorted(tempo_changes.items(), key=lambda item: item[0])}
+        print(tempo_changes)
+
+        messages = []
+        csv_rows = sorted(csv_rows, key=lambda cr: int(cr[1]))
+        time_prev = 0
+        for row in csv_rows:
+            m_track, m_time, m_type, msg = row[0], int(row[1]), row[2], row[3:]
+            if m_type == 'Tempo':
+                continue
+
+            rel_t = (m_time - time_prev)
+
+            current_tempo = 0
+            for time, tempo in tempo_changes.items():
+                if time > m_time:
+                    break
+                current_tempo = tempo
+
+            rel_t *= 500_000 / current_tempo
+            time = time_prev + rel_t
+
+            new_msg = [m_track, str(int(time)*4), m_type] + msg
+            messages.append(new_msg)
+
+            time_prev = m_time
+
+            print(row, new_msg, current_tempo)
+
+        messages = sorted(messages, key=lambda m: int(m[1]))
+        return messages

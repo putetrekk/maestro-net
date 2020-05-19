@@ -13,7 +13,7 @@ def gen_music(model: Model, length: int, n=1) -> str:
 
     for _ in range(length):
         tokenizer = create_tokenizer()
-        token_list = tokenizer.texts_to_sequences([music])[0]
+        token_list = tokenizer.texts_to_sequences([music.split(' ')])[0]
         token_list = pad_sequences([token_list], maxlen=model.input_shape[1], padding='pre')
 
         predictions = model.predict(token_list, verbose=0)[0]
