@@ -8,6 +8,7 @@ import numpy as np
 from maestroutil import *
 from transposer import scarlatti_get_offset
 
+
 class MidiParser:
     TIME_CONSTANT = 10
     MAX_WAIT = 10
