@@ -9,7 +9,7 @@ from maestroutil import *
 from transposer import scarlatti_get_offset
 
 class MidiParser:
-    TIME_CONSTANT = 1
+    TIME_CONSTANT = 10
     MAX_WAIT = 50
 
     def __init__(self, midi_dir: str, output_dir: str):
@@ -133,42 +133,35 @@ class MidiParser:
 
     @staticmethod
     def normalize_tempo(csv_rows):
-        tempo_changes = {}  # time: tempo
-
+        # Find the number of pulses (ticks) per quarter note (PPQ) and compute a normalization constant
+        # based on generated files with PPQ=384
+        header = next(row for row in csv_rows if row[2] == 'Header')
+        normalization_constant = 384 / int(header[5])
         for row in csv_rows:
-            m_track, m_time, m_type = row[0], int(row[1]), row[2]
-            if m_type == 'Tempo':
-                tempo = int(row[3])
-                tempo_changes[m_time] = tempo
+            row[1] = int(row[1]) * normalization_constant
 
-        tempo_changes = {k: v for k, v in sorted(tempo_changes.items(), key=lambda item: item[0])}
-        print(tempo_changes)
-
-        messages = []
+        # Sort the rows by time
         csv_rows = sorted(csv_rows, key=lambda cr: int(cr[1]))
-        time_prev = 0
+
+        # Normalize time for a default tempo=500_000
+        norm_csv = []
+        m_time_prev = 0
+        m_adjusted_time = 0
+        tempo_ratio = 1
         for row in csv_rows:
             m_track, m_time, m_type, msg = row[0], int(row[1]), row[2], row[3:]
+
             if m_type == 'Tempo':
-                continue
+                tempo_ratio = int(row[3]) / 500_000
 
-            rel_t = (m_time - time_prev)
+            if m_type not in ['Note_on_c', 'Note_off_c']:
+                continue  # skip all MIDI commands other than note_on and note_off
 
-            current_tempo = 0
-            for time, tempo in tempo_changes.items():
-                if time > m_time:
-                    break
-                current_tempo = tempo
+            rel_t = (m_time - m_time_prev)
+            m_time_prev = m_time
+            m_adjusted_time += rel_t * tempo_ratio
 
-            rel_t *= 500_000 / current_tempo
-            time = time_prev + rel_t
+            new_msg = [m_track, str(int(m_adjusted_time)), m_type] + msg
+            norm_csv.append(new_msg)
 
-            new_msg = [m_track, str(int(time)*4), m_type] + msg
-            messages.append(new_msg)
-
-            time_prev = m_time
-
-            print(row, new_msg, current_tempo)
-
-        messages = sorted(messages, key=lambda m: int(m[1]))
-        return messages
+        return norm_csv
