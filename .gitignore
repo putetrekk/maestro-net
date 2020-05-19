@@ -1,5 +1,6 @@
 .idea
 venv
+data
 midi/*.mid
 midi/output
 output

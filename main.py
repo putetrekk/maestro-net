@@ -67,6 +67,7 @@ if __name__ == '__main__':
 
     # save metrics history as csv
     if save_history:
+        pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
         filename = f'history_{model.Name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
         with open(output_dir + filename, 'w', newline="\n") as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
