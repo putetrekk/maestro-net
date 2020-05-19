@@ -8,3 +8,4 @@ output
 *.mid
 *.h5
 *.pyc
+transformer_v2/logs
