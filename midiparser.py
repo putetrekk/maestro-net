@@ -154,8 +154,8 @@ class MidiParser:
         for row in csv_rows:
             row[1] = int(row[1]) * normalization_constant
 
-        # Sort the rows by time
-        csv_rows = sorted(csv_rows, key=lambda cr: int(cr[1]))
+        # Sort the rows by time and type (tempo changes first)
+        csv_rows = sorted(csv_rows, key=lambda cr: (int(cr[1]), cr[2] != 'Tempo'))
 
         # Normalize time for a default tempo=500_000
         norm_csv = []
