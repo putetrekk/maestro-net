@@ -11,6 +11,7 @@ from transposer import scarlatti_get_offset
 
 class MidiParser:
     TIME_CONSTANT = 10
+    VELOCITIES = 10 # 127 gives ONE VELOCITY, 4 gives 32 VELOCITIES, 1 gives 128 VELOCITIES
     MAX_WAIT = 50
 
     def __init__(self, midi_dir: str, output_dir: str):
@@ -68,6 +69,7 @@ class MidiParser:
 
         encoded = ''
         time_prev = 0
+        velocity_prev = '0'
         for row in csv_rows:
             m_track, m_time, m_type = row[0], int(row[1]), row[2]
 
@@ -84,7 +86,13 @@ class MidiParser:
                 if m_type == 'Note_off_c' or (m_type == 'Note_on_c' and velocity == '0'):
                     encoded += ' endp' + note
                 elif m_type == 'Note_on_c':
-                    encoded += ' p' + note
+                    if velocity != velocity_prev:
+                        velocity_prev = velocity
+                        velocity = int(velocity) // self.VELOCITIES
+                        encoded += ' v' + str(velocity) + ' p' + note
+                    else:
+                        encoded += ' p' + note
+
 
         return encoded
 
@@ -97,8 +105,13 @@ class MidiParser:
         csv_rows.append(['1', '0', 'Start_track'])
         csv_rows.append(['1', '0', 'Tempo', '500000'])
 
-        m_track, m_channel, m_time = '1', '0', 0
+        m_track, m_channel, m_time, m_velocity = '1', '0', 0, 0
+
         for word in words:
+            vel_change = re.match(r'v([0-9]*)', word)
+            if vel_change:
+                m_velocity = int(vel_change.group(1)) * self.VELOCITIES
+
             wait = re.match(r'wait([0-9]*)', word)
             if wait:
                 m_time += int(wait.group(1)) * self.TIME_CONSTANT
@@ -107,8 +120,7 @@ class MidiParser:
             if note:
                 m_type = 'Note_off_c' if note.group('end') else 'Note_on_c'
                 m_note = note.group('note')
-                m_velocity = '127'
-                csv_rows.append([m_track, str(m_time), m_type, m_channel, m_note, m_velocity])
+                csv_rows.append([m_track, str(m_time), m_type, m_channel, m_note, str(m_velocity)])
 
         csv_rows.append(['1', str(m_time + 5000), 'End_track'])
         csv_rows.append(['0', '0', 'End_of_file'])
@@ -128,8 +140,9 @@ class MidiParser:
         waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
         ps = ['p' + str(i) for i in range(109)]
         endps = ['endp' + str(i) for i in range(109)]
+        vs = ['v' + str(i) for i in range(128 // MidiParser.VELOCITIES)]
 
-        vocabulary = waits + ps + endps
+        vocabulary = waits + ps + endps + vs
         return {vocabulary[i]: i for i in range(len(vocabulary))}
 
     @staticmethod
