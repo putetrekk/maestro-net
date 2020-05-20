@@ -11,7 +11,7 @@ from transposer import scarlatti_get_offset
 
 class MidiParser:
     TIME_CONSTANT = 10
-    VELOCITIES = 10 # 127 gives ONE VELOCITY, 4 gives 32 VELOCITIES, 1 gives 128 VELOCITIES
+    VELOCITIES = 10  # 127 gives ONE VELOCITY, 4 gives 32 VELOCITIES, 1 gives 128 VELOCITIES
     MAX_WAIT = 50
 
     def __init__(self, midi_dir: str, output_dir: str):
@@ -140,7 +140,7 @@ class MidiParser:
         waits = ['wait' + str(i) for i in range(1, MidiParser.MAX_WAIT + 1)]
         ps = ['p' + str(i) for i in range(109)]
         endps = ['endp' + str(i) for i in range(109)]
-        vs = ['v' + str(i) for i in range(128 // MidiParser.VELOCITIES)]
+        vs = ['v' + str(i) for i in range(127 // MidiParser.VELOCITIES + 1)]
 
         vocabulary = waits + ps + endps + vs
         return {vocabulary[i]: i for i in range(len(vocabulary))}
