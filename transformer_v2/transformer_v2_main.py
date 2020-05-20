@@ -3,21 +3,12 @@ import csv
 import tensorflow as tf
 
 # Maximum sentence length
-from main import load_data, prefix_timestamp
 from midiparser import MidiParser
 from transformer_v2.predictor import Predictor
 from transformer_v2.transformer import transformer
-from transformer_v2.utils import textPreprocess, tokenizeAndFilter, createDataset, CustomSchedule, split_test_train
+from transformer_v2.utils import tokenizeAndFilter, createDataset, CustomSchedule, split_test_train, split_input_output
 import os
-import re
-import pandas as pd
-import pickle
 import datetime
-
-
-
-# GPU
-from transformer_v2.works_to_csv import split_input_output
 
 strategy = tf.distribute.get_strategy()
 
@@ -56,37 +47,44 @@ def accuracy(y_true, y_pred):
 	y_true = tf.reshape(y_true, shape=(-1, MAX_LENGTH - 1))
 	return tf.keras.metrics.sparse_categorical_accuracy(y_true, y_pred)
 
+
+def load_data(filename: str, take_num: int = 1000):
+	with open(filename, 'r') as file:
+		return file.read().split('\n')[0:take_num]
+
+
+def prefix_timestamp(filename: str):
+	now = datetime.datetime.now()
+	timestamp = now.strftime('%Y%m%d_%H%M%S')
+	if filename.startswith('/'):
+		return timestamp + filename
+	else:
+		return timestamp + '_' + filename
+
+
 if __name__ == '__main__':
-	epochs = 50
-	epoch_batch_size = 2
-	dataset_works = 555
+	# clear backend
+	tf.keras.backend.clear_session()
+	epochs = 1_000
+	epoch_batch_size = 5
+	dataset_works = 1000
 	WORDS_PER_SECTION = MAX_LENGTH-2
 	output_dir = f'output/{prefix_timestamp("/")}'
 	midi_dir = '../midi/'
 	parser = MidiParser(midi_dir, output_dir)
-	print(output_dir)
-	#df = pd.read_csv('data/split_scarlatti.csv')
-	# df['Input'] = df['Input'].apply(lambda x: textPreprocess(str(x)))
-	# df['Target'] = df['Target'].apply(lambda x: textPreprocess(str(x)))
-	#questions, answers = df['Input'].tolist(), df['Target'].tolist()
 
 	data = load_data('../data/scarlatti_k1_555.txt', dataset_works)  # load from preparsed text-file
 	inputs, outputs = split_input_output(data, WORDS_PER_SECTION)
 
-
 	tokenizer, questions, answers, vocab_size,  = tokenizeAndFilter(inputs, outputs, max_length=MAX_LENGTH)
-
 	train_x, train_y, valid_x, valid_y = split_test_train(questions, answers, 0.1)
-
-
 	print(f'questions: {questions}')
 	print('Vocab size: {}'.format(vocab_size))
 	print('Number of samples: {}'.format(len(questions)))
 
 	dataset = createDataset(train_x, train_y, BATCH_SIZE)
 	validation_dataset = createDataset(valid_x, valid_y, BATCH_SIZE)
-	# clear backend
-	tf.keras.backend.clear_session()
+
 	learning_rate = CustomSchedule(D_MODEL)
 	optimizer = tf.keras.optimizers.Adam(
 		learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
@@ -124,7 +122,6 @@ if __name__ == '__main__':
 			initial_epoch=epoch_start,
 			epochs=epoch_end,
 			callbacks=[tensorboard_callback])
-
 
 		generated_music = predictor.generate_work(model)
 		music_name = f'transformer_train_batch{epoch_end}.midi'

@@ -2,23 +2,6 @@ import pickle
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import re
-
-def textPreprocess(input_text):
-	def removeAccents(input_text):
-		strange = 'ąćęłńóśżź'
-		ascii_replacements = 'acelnoszz'
-		translator = str.maketrans(strange, ascii_replacements)
-		return input_text.translate(translator)
-
-	#  def removeSpecial(input_text):
-	#      special='[^A-Za-z0-9 ]+'
-	#      return re.sub(special, '', input_text)
-
-	def removeTriplicated(input_text):
-		return re.compile(r'(.)\1{2,}', re.IGNORECASE).sub(r'\1', input_text)
-
-	return removeTriplicated(removeAccents(input_text.lower()))
 
 
 # Build tokenizer for both questions and answers. Tokenize, filter pad sentences
@@ -40,7 +23,6 @@ def tokenizeAndFilter(inputs, outputs, max_length):
 		sentence2 = START_TOKEN + tokenizer.encode(sentence2) + END_TOKEN
 		# check tokenized sentence max length
 		if len(sentence1) <= max_length and len(sentence2) <= max_length:
-			print(f'len sentence1: {len(sentence1)} - sentence2: {len(sentence2)}')
 			tokenized_inputs.append(sentence1)
 			tokenized_outputs.append(sentence2)
 
@@ -124,3 +106,21 @@ def split_test_train(x, y, validation_split=0.1):
 	validation_x, validation_y = x[0:v_num], y[0:v_num]
 
 	return train_x, train_y, validation_x, validation_y
+
+
+def split_input_output(all_data: list, words_per_section = 75):
+	inputs, outputs = [], []
+	for data in all_data:
+		sep = ' '
+		sectioned_notes = []
+
+		groups = data.split(sep)
+		while len(groups):
+			sectioned_notes.append(sep.join(groups[:words_per_section]))
+			groups = groups[words_per_section:]
+
+		for i in range(len(sectioned_notes) - 1):
+			inputs.append(sectioned_notes[i])
+			outputs.append(sectioned_notes[i + 1])
+
+	return inputs, outputs
