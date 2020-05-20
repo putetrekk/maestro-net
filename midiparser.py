@@ -105,7 +105,7 @@ class MidiParser:
         csv_rows.append(['1', '0', 'Start_track'])
         csv_rows.append(['1', '0', 'Tempo', '500000'])
 
-        m_track, m_channel, m_time, m_velocity = '1', '0', 0, 0
+        m_track, m_channel, m_time, m_velocity = '1', '0', 0, 127
 
         for word in words:
             vel_change = re.match(r'v([0-9]*)', word)
