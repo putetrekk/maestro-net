@@ -8,8 +8,7 @@ from transformer_v2.positionalEncoding import PositionalEncoding
 def decoderLayer(units, d_model, num_heads, dropout, name="decoder_layer"):
 	inputs = tf.keras.Input(shape=(None, d_model), name="inputs")
 	enc_outputs = tf.keras.Input(shape=(None, d_model), name="encoder_outputs")
-	look_ahead_mask = tf.keras.Input(
-		shape=(1, None, None), name="look_ahead_mask")
+	look_ahead_mask = tf.keras.Input(shape=(1, None, None), name="look_ahead_mask")
 	padding_mask = tf.keras.Input(shape=(1, 1, None), name='padding_mask')
 
 	attention1 = MultiHeadAttention(

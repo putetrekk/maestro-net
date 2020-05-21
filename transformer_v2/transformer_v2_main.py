@@ -6,7 +6,8 @@ import tensorflow as tf
 from midiparser import MidiParser
 from transformer_v2.predictor import Predictor
 from transformer_v2.transformer import transformer
-from transformer_v2.utils import tokenizeAndFilter, createDataset, CustomSchedule, split_test_train, split_input_output
+from transformer_v2.utils import createDataset, CustomSchedule, split_test_train, split_input_output, tokenize_data, \
+	tokenize_and_filter
 import os
 import datetime
 
@@ -64,20 +65,29 @@ def prefix_timestamp(filename: str):
 
 if __name__ == '__main__':
 	# clear backend
+	print(f'Batch Size = {BATCH_SIZE}')
 	tf.keras.backend.clear_session()
 	epochs = 1_000
-	epoch_batch_size = 5
+	epoch_batch_size = 2
 	dataset_works = 1000
 	WORDS_PER_SECTION = MAX_LENGTH-2
 	output_dir = f'output/{prefix_timestamp("/")}'
 	midi_dir = '../midi/'
 	parser = MidiParser(midi_dir, output_dir)
 
-	data = load_data('../data/scarlatti_k1_555.txt', dataset_works)  # load from preparsed text-file
-	inputs, outputs = split_input_output(data, WORDS_PER_SECTION)
+	data_chopin = load_data('../data/chopin.txt', dataset_works)  # load from preparsed text-file
+	data_bach = load_data('../data/bach.txt', dataset_works)  # load from preparsed text-file
+	data_scarlatti = load_data('../data/scarlatti.txt', dataset_works)
+	inputs, outputs = split_input_output(data_bach + data_chopin + data_scarlatti, WORDS_PER_SECTION)
 
-	tokenizer, questions, answers, vocab_size,  = tokenizeAndFilter(inputs, outputs, max_length=MAX_LENGTH)
+	print(f'chopin_size={len(data_chopin)}')
+	print(f'bach_size={len(data_bach)}')
+	print(f'scarlatti_size={len(data_scarlatti)}')
+
+	# tokenizer, questions, answers, vocab_size, = tokenize_and_filter(inputs, outputs, max_length=MAX_LENGTH)
+	tokenizer, questions, answers, vocab_size,  = tokenize_data(inputs, outputs, max_length=MAX_LENGTH)
 	train_x, train_y, valid_x, valid_y = split_test_train(questions, answers, 0.1)
+
 	print(f'questions: {questions}')
 	print('Vocab size: {}'.format(vocab_size))
 	print('Number of samples: {}'.format(len(questions)))
@@ -86,8 +96,7 @@ if __name__ == '__main__':
 	validation_dataset = createDataset(valid_x, valid_y, BATCH_SIZE)
 
 	learning_rate = CustomSchedule(D_MODEL)
-	optimizer = tf.keras.optimizers.Adam(
-		learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
+	optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
 	with strategy.scope():
 		model = transformer(
@@ -140,6 +149,5 @@ if __name__ == '__main__':
 			writer.writerow(headers)
 			for line in recorded_stats:
 				writer.writerow(line)
-
 
 	print("\nModel weights saved!")

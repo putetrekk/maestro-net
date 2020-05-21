@@ -6,7 +6,6 @@ from transformer_v2.utils import scaledDotProductAttention
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-
 	def __init__(self, d_model, num_heads, name="multi_head_attention"):
 		super(MultiHeadAttention, self).__init__(name=name)
 		self.num_heads = num_heads
@@ -23,13 +22,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 		self.dense = tf.keras.layers.Dense(units=d_model)
 
 	def split_heads(self, inputs, batch_size):
-		inputs = tf.reshape(
-			inputs, shape=(batch_size, -1, self.num_heads, self.depth))
+		inputs = tf.reshape(inputs, shape=(batch_size, -1, self.num_heads, self.depth))
 		return tf.transpose(inputs, perm=[0, 2, 1, 3])
 
 	def call(self, inputs):
-		query, key, value, mask = inputs['query'], inputs['key'], inputs[
-			'value'], inputs['mask']
+		query = inputs['query']
+		key = inputs['key']
+		value = inputs['value']
+		mask = inputs['mask']
 		batch_size = tf.shape(query)[0]
 
 		# linear layers
@@ -44,7 +44,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 		# scaled dot-product attention
 		scaled_attention = scaledDotProductAttention(query, key, value, mask)
-
 		scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])
 
 		# concatenation of heads

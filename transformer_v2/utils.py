@@ -2,37 +2,65 @@ import pickle
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
+from transformer_v2.transformer_tokenizer import TransformerTokenizer
 
 
 # Build tokenizer for both questions and answers. Tokenize, filter pad sentences
-def tokenizeAndFilter(inputs, outputs, max_length):
-	tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(inputs + outputs, target_vocab_size=2 ** 13)
+def tokenize_and_filter(inputs, outputs, max_length):
+	tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(inputs + outputs, 600)
 	with open('tokenizer.pickle', 'wb') as handle:
 		pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-	# Define start and end token to indicate the start and end of a sentence
 	START_TOKEN, END_TOKEN = [tokenizer.vocab_size], [tokenizer.vocab_size + 1]
-	# Vocabulary size plus start and end token
 	vocab_size = tokenizer.vocab_size + 2
 
 	tokenized_inputs, tokenized_outputs = [], []
+	for (sentence1, sentence2) in zip(inputs, outputs):
+		sentence1 = START_TOKEN + tokenizer.encode(sentence1) + END_TOKEN
+		sentence2 = START_TOKEN + tokenizer.encode(sentence2) + END_TOKEN
+
+		if len(sentence1) <= max_length and len(sentence2) <= max_length:
+			tokenized_inputs.append(sentence1)
+			tokenized_outputs.append(sentence2)
+
+	tokenized_inputs = tf.keras.preprocessing.sequence.pad_sequences(tokenized_inputs, maxlen=max_length, padding='post')
+	tokenized_outputs = tf.keras.preprocessing.sequence.pad_sequences(tokenized_outputs, maxlen=max_length, padding='post')
+
+	return tokenizer, tokenized_inputs, tokenized_outputs, vocab_size
+
+
+def tokenize_data(inputs, outputs, max_length):
+	tokenizer, START_TOKEN, END_TOKEN, vocab_size = get_custom_tokenizer()
+	with open('tokenizer.pickle', 'wb') as handle:
+		pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+	tokenized_inputs = []
+	tokenized_outputs = []
 
 	for (sentence1, sentence2) in zip(inputs, outputs):
 		# tokenize sentence
 		sentence1 = START_TOKEN + tokenizer.encode(sentence1) + END_TOKEN
 		sentence2 = START_TOKEN + tokenizer.encode(sentence2) + END_TOKEN
+
 		# check tokenized sentence max length
 		if len(sentence1) <= max_length and len(sentence2) <= max_length:
 			tokenized_inputs.append(sentence1)
 			tokenized_outputs.append(sentence2)
 
 	# pad tokenized sentences
-	tokenized_inputs = tf.keras.preprocessing.sequence.pad_sequences(
-		tokenized_inputs, maxlen=max_length, padding='post')
-	tokenized_outputs = tf.keras.preprocessing.sequence.pad_sequences(
-		tokenized_outputs, maxlen=max_length, padding='post')
+	tokenized_inputs = tf.keras.preprocessing.sequence.pad_sequences(tokenized_inputs, maxlen=max_length, padding='post')
+	tokenized_outputs = tf.keras.preprocessing.sequence.pad_sequences(tokenized_outputs, maxlen=max_length, padding='post')
 
 	return tokenizer, tokenized_inputs, tokenized_outputs, vocab_size
+
+
+def get_custom_tokenizer():
+	tokenizer = TransformerTokenizer()
+	start_token = tokenizer.start_token
+	end_token = tokenizer.end_token
+	vocab_size = tokenizer.vocab_size + 2
+
+	return tokenizer, start_token, end_token, vocab_size
 
 
 def createDataset(inputs, outputs, batch_size):
@@ -108,7 +136,7 @@ def split_test_train(x, y, validation_split=0.1):
 	return train_x, train_y, validation_x, validation_y
 
 
-def split_input_output(all_data: list, words_per_section = 75):
+def split_input_output(all_data: list, words_per_section=75):
 	inputs, outputs = [], []
 	for data in all_data:
 		sep = ' '
