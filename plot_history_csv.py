@@ -22,17 +22,21 @@ PLOT_TITLE = "LSTM ON ALL 4 256 530 560 SAMPLES"
 LINE_STYLES = [
     '-',
     '--',
-    '-.',
-    ':',
+    #'-.',
+    #':',
 ]
 
 COLORS = [
-    'b',
-    'r',
-    'y',
-    'c',
-    'm',
-    'g',
+    #'b',
+    #'r',
+    #'y',
+    #'c',
+    #'m',
+    #'g',
+    '0.75',
+    '0.5',
+    '0.25',
+    '0',
 ]
 
 # will be set automatically
