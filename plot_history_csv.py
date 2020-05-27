@@ -1,29 +1,93 @@
 import ast
-
 import matplotlib.pyplot as plt
 import csv
+import os
+from os.path import isfile, join
 
-file = 'history_LSTM_20200415_233015.csv'
+# USE (DIR_NAME, NETWORK_LABEL)
+DIRS_TO_PLOT = [
+    ("20200526_095935_lstm_all", "LSTM 100 units"),
+    ("20200526_114934_lstm_all_512", "LSTM 512 units"),
+]
 
-title = 'LSTM trained on 20_000 samples'
-# columns = ['loss', 'val_loss']
-columns = ['accuracy', 'val_accuracy']
+COLUMNS_TO_PLOT = [
+    'loss',
+    'val_loss',
+    #'accuracy',
+    #'val_accuracy',
+]
 
-with open(file, newline='\n') as csv_file:
-    data = list(csv.reader(csv_file, delimiter=','))
+PLOT_TITLE = "LSTM ON ALL 4 256 530 560 SAMPLES"
 
-# Transpose
-data = list(zip(*data))
-# Convert to dict with column name as key
-data = {x[0]: x[1:] for x in data}
-# Parse values to int/float
-data = {x: list(map(ast.literal_eval, data[x])) for x in data}
+LINE_STYLES = [
+    '-',
+    '--',
+    '-.',
+    ':',
+]
 
-# Plot
-for column in columns:
-    plt.plot(data['epoch'], data[column])
-plt.legend(columns)
+COLORS = [
+    'b',
+    'r',
+    'y',
+    'c',
+    'm',
+    'g',
+]
 
-plt.title(title)
-plt.xlabel('epoch')
-plt.show()
+# will be set automatically
+column_labels = []
+
+
+def next_line_style():
+    style = LINE_STYLES.pop(0)
+    LINE_STYLES.append(style)
+    return style
+
+
+def next_color():
+    style = COLORS.pop(0)
+    COLORS.append(style)
+    return style
+
+
+def plot_csv(file:str, network_label:str):
+
+    with open(file, newline='\n') as csv_file:
+        data = list(csv.reader(csv_file, delimiter=','))
+
+    # Transpose
+    data = list(zip(*data))
+    # Convert to dict with column name as key
+    data = {x[0]: x[1:] for x in data}
+    # Parse values to int/float
+    data = {x: list(map(ast.literal_eval, data[x])) for x in data}
+
+    color = next_color()
+
+    # Plot
+    for column in COLUMNS_TO_PLOT:
+        plt.plot(data['epoch'], data[column], linestyle=next_line_style(), lw=2, c=color)
+        column_labels.append(f'{network_label}: {column}')
+    plt.legend(column_labels)
+
+    plt.title(PLOT_TITLE)
+    plt.xlabel('epoch')
+
+
+if __name__ == '__main__':
+    os.chdir("output")
+
+    dirs_in_folder = os.listdir()
+
+    for dir in DIRS_TO_PLOT:
+        os.chdir(dir[0])
+
+        files = [f for f in os.listdir() if isfile(f) and f.split('.')[1] == 'csv']
+        lastcsv = sorted(files, reverse=True)[0]
+
+        plot_csv(lastcsv, network_label=dir[1])
+
+        os.chdir('..')
+
+    plt.show()
