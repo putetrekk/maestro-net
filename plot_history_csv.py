@@ -6,8 +6,8 @@ from os.path import isfile, join
 
 # USE (DIR_NAME, NETWORK_LABEL)
 DIRS_TO_PLOT = [
-    ("20200526_095935_lstm_all", "LSTM 100 units"),
-    ("20200526_114934_lstm_all_512", "LSTM 512 units"),
+    ("20200526_095935_lstm_all", "100 + 150 cell LSTM"),
+    ("20200526_114934_lstm_all_512", "512 + 512 cell LSTM"),
 ]
 
 COLUMNS_TO_PLOT = [
@@ -33,9 +33,9 @@ COLORS = [
     #'c',
     #'m',
     #'g',
-    '0.75',
-    '0.5',
-    '0.25',
+    '0.6',
+    '0.4',
+    '0.2',
     '0',
 ]
 
@@ -81,16 +81,21 @@ def plot_csv(file:str, network_label:str):
 
 if __name__ == '__main__':
     os.chdir("output")
+    plt.figure(dpi=300)
+    plt.grid(True)
 
-    dirs_in_folder = os.listdir()
+    dirs_in_folder = [(dir, dir) for dir in os.listdir()]
 
     for dir in DIRS_TO_PLOT:
         os.chdir(dir[0])
 
         files = [f for f in os.listdir() if isfile(f) and f.split('.')[1] == 'csv']
-        lastcsv = sorted(files, reverse=True)[0]
+        lastcsv = None
+        if len(files) > 0:
+            lastcsv = sorted(files, reverse=True)[0]
 
-        plot_csv(lastcsv, network_label=dir[1])
+        if isinstance(lastcsv, str):
+            plot_csv(lastcsv, network_label=dir[1])
 
         os.chdir('..')
 
