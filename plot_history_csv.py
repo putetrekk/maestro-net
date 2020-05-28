@@ -20,8 +20,8 @@ COLUMNS_TO_PLOT = [
 PLOT_TITLE = "LSTM ON ALL 4 256 530 560 SAMPLES"
 
 LINE_STYLES = [
-    '-',
     '--',
+    '-',
     #'-.',
     #':',
 ]
