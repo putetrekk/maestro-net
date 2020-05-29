@@ -1,4 +1,6 @@
 import csv
+import pickle
+import random
 
 import tensorflow as tf
 
@@ -19,9 +21,9 @@ BUFFER_SIZE = 20000
 
 MAX_LENGTH = 80
 # For Transformer
-NUM_LAYERS = 2  # 6
-D_MODEL = 256  # 512
-NUM_HEADS = 8
+NUM_LAYERS = 4  # 6
+D_MODEL = 128  # 512
+NUM_HEADS = 4
 UNITS = 512  # 2048
 DROPOUT = 0.1
 
@@ -68,7 +70,7 @@ if __name__ == '__main__':
 	print(f'Batch Size = {BATCH_SIZE}')
 	tf.keras.backend.clear_session()
 	epochs = 1_000
-	epoch_batch_size = 2
+	epoch_batch_size = 5
 	dataset_works = 1000
 	WORDS_PER_SECTION = MAX_LENGTH-2
 	output_dir = f'output/{prefix_timestamp("/")}'
@@ -78,14 +80,27 @@ if __name__ == '__main__':
 	data_chopin = load_data('../data/chopin.txt', dataset_works)  # load from preparsed text-file
 	data_bach = load_data('../data/bach.txt', dataset_works)  # load from preparsed text-file
 	data_scarlatti = load_data('../data/scarlatti.txt', dataset_works)
-	inputs, outputs = split_input_output(data_bach + data_chopin + data_scarlatti, WORDS_PER_SECTION)
+
+	all_data = data_chopin
+	random.Random("123").shuffle(all_data)
+	inputs, outputs = split_input_output(data_bach, WORDS_PER_SECTION)
 
 	print(f'chopin_size={len(data_chopin)}')
 	print(f'bach_size={len(data_bach)}')
 	print(f'scarlatti_size={len(data_scarlatti)}')
 
-	# tokenizer, questions, answers, vocab_size, = tokenize_and_filter(inputs, outputs, max_length=MAX_LENGTH)
-	tokenizer, questions, answers, vocab_size,  = tokenize_data(inputs, outputs, max_length=MAX_LENGTH)
+	tokenizer, questions, answers, vocab_size, = tokenize_and_filter(inputs, outputs, max_length=MAX_LENGTH)
+	# tokenizer, questions, answers, vocab_size,  = tokenize_data(inputs, outputs, max_length=MAX_LENGTH)
+
+	for i in range(500):
+		word = tokenizer.decode([i])
+		print(f'{i} = {word}')
+	try:
+		os.mkdir(output_dir)
+		pickle.dump(tokenizer, open(f'{output_dir}pickle.pickle', "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+	except OSError:
+		print("Creation of the directory %s failed" % output_dir)
+
 	train_x, train_y, valid_x, valid_y = split_test_train(questions, answers, 0.1)
 
 	print(f'questions: {questions}')
@@ -118,9 +133,6 @@ if __name__ == '__main__':
 
 	predictor = Predictor(tokenizer=tokenizer, max_length=MAX_LENGTH)
 	for batch in range(epochs // epoch_batch_size):
-
-
-
 		# train
 		epoch_start = batch * epoch_batch_size
 		epoch_end = epoch_start + epoch_batch_size
@@ -132,11 +144,27 @@ if __name__ == '__main__':
 			epochs=epoch_end,
 			callbacks=[tensorboard_callback])
 
-		generated_music = predictor.generate_work(model)
-		music_name = f'transformer_train_batch{epoch_end}.midi'
-		parser.save_music(generated_music, music_name)
+		try:
+			initial_notes = "wait10 wait1 p76 wait10 wait1 endp76 p78 wait10 wait1 endp78 p79 wait10 wait1 endp79 p81 wait10 wait1 " \
+			                "endp81 p83 wait10 wait1 p71 wait10 wait1 endp83 endp71 p75 wait10 wait1 p71 wait2 endp75 wait9 endp71 " \
+			                "p64 p76 wait10 wait1 endp64 p66 wait10 wait1 endp66 p67 wait10 wait1 endp67 p69 wait10 wait1 endp69 p71 " \
+			                "wait10 wait1 p59 wait2 endp71 wait9 endp59 endp76 p63 p78 wait10 wait1 p59 wait2 endp63 wait9 endp59 " \
+			                "endp78 p64 p79 wait10 wait1 endp79 p76 wait10 wait1 endp76 endp64 p66 p81 wait10 wait1 endp81 p78 wait10 " \
+			                "wait1 endp78 endp66 p67 p83 wait10 wait1 endp83 p79 wait10 wait1 endp79 endp67 p69 p78 wait10 wait1 " \
+			                "endp78 p76 wait10 wait1 endp76 endp69 p71 p75 wait10 wait10 wait2 endp75 endp71 p71 p83 wait10 wait10 " \
+			                "wait2 endp83 endp71 p71 p84 wait5 endp84 p83 wait5 endp83 p84 wait5 endp84 p83 wait5 endp83 endp71 p71 " \
+			                "p84 wait5 endp84 p83 wait5 endp83 p84 wait5 endp84 p83 wait5 endp71 p67 p71 wait10 wait1 endp83 p81 " \
+			                "wait10 wait1 endp81 endp71 endp67 p67 p71 p79 wait10 wait1 endp79 p78 wait10 wait1 endp78 endp71 endp67 " \
+			                "p67 p71 p76 wait10 wait1 endp76"
+
+			generated_music = predictor.generate_work(model, 10, initial_notes)
+			music_name = f'transformer_train_batch{epoch_end}.midi'
+			parser.save_music(generated_music, music_name)
+		except:
+			print(f"An error occurred when generating music on epoch {epoch_end}")
 
 		model.save_weights(f'{output_dir}weights_{epoch_end}.h5')
+
 		# Record metrics
 		metrics = history.history
 		metrics = [list(range(epoch_start, epoch_end))] + [metrics[key] for key in metrics if key in record_metrics]

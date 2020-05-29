@@ -7,7 +7,7 @@ from transformer_v2.transformer_tokenizer import TransformerTokenizer
 
 # Build tokenizer for both questions and answers. Tokenize, filter pad sentences
 def tokenize_and_filter(inputs, outputs, max_length):
-	tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(inputs + outputs, 600)
+	tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(inputs + outputs, 650)
 	with open('tokenizer.pickle', 'wb') as handle:
 		pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
